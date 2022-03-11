@@ -5,7 +5,7 @@ import PIL
 import torch
 import pandas as pd
 from matplotlib import image as mpimg
-from skimage import io, transform
+from sklearn.model_selection import train_test_split
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader, dataloader
@@ -23,6 +23,9 @@ path = Path("../data/annotations.csv")
 imagesDir = "../data/images/"
 
 df = pd.read_csv(path)
+
+# Train/test split om accuracy van localisatie in de toekomst te traceren
+train, test = train_test_split(df, test_size=0.1, random_state=0)
 
 
 def showItem(idx):
@@ -72,22 +75,16 @@ class AquaTrashDataset(Dataset):
         return sample
 
 
-# class ToTensor(object):
-#
-#     def __call__(self, sample):
-#         image, landmarks = sample['image'], sample['landmarks']
-#
-#         # swap color axis because
-#         # numpy image: H x W x C
-#         # torch image: C X H X W
-#         image = image.transpose((2, 0, 1))
-#         return {'image': torch.from_numpy(image),
-#                 'landmarks': torch.from_numpy(landmarks)}
-
-
+# test/train split toepassen
 aquaTrash = AquaTrashDataset(df, imagesDir)
-#showItem(0)
+
+# data per item
+print(aquaTrash.__getitem__(468))
+# lengte dataset
+print(aquaTrash.__len__())
+
+#Laadt de data in
 #dataloader = DataLoader(aquaTrash, batch_size=4, shuffle=True, num_workers=4)
 
-print(aquaTrash.__getitem__(468))
-print(aquaTrash.__len__())
+#Geeft foto met border weer
+#showItem(0)
