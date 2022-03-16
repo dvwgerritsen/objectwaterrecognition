@@ -1,90 +1,216 @@
-import os
-from pathlib import Path
+if __name__ == '__main__':
+    # Ignore warnings
+    import os
+    import time
+    import warnings
+    from pathlib import Path
 
-import PIL
-import torch
-import pandas as pd
-from matplotlib import image as mpimg
-from sklearn.model_selection import train_test_split
-import numpy as np
-import matplotlib.pyplot as plt
-from torch.utils.data import Dataset, DataLoader, dataloader
-from torchvision import transforms, utils
+    import PIL
+    # from imutils import paths
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import pandas as pd
+    import torch
+    from matplotlib import image as mpimg
+    from sklearn.model_selection import train_test_split
+    from torch.nn import CrossEntropyLoss
+    from torch.nn import MSELoss
+    from torch.nn import Module, Sequential, ReLU, Linear, Sigmoid, Dropout, Identity
+    from torch.optim import Adam
+    from torch.utils.data import DataLoader
+    from torch.utils.data import Dataset
+    from torchvision.models import resnet50
+    from tqdm import tqdm
 
-# Ignore warnings
-import warnings
+    from src import config
 
-warnings.filterwarnings("ignore")
+    warnings.filterwarnings("ignore")
 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-PIN_MEMORY = True if DEVICE == "cuda" else False
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    PIN_MEMORY = True if DEVICE == "cuda" else False
 
-path = Path("../data/annotations.csv")
-imagesDir = "../data/images/"
+    path = Path("../data/output.csv")
+    imagesDir = "../data/resized_Images/"
 
-df = pd.read_csv(path)
+    df = pd.read_csv(path)
 
-# Train/test split om accuracy van localisatie in de toekomst te traceren
-train, test = train_test_split(df, test_size=0.1, random_state=0)
-
-
-def showItem(idx):
-    """Show image with landmarks"""
-    img_dir = imagesDir + df.iloc[idx, 0]
-    landmarks = df.iloc[idx, 1:5]
-    class_names = df.iloc[idx, 5]
-    landmarks = np.asarray(landmarks)
-    image = mpimg.imread(img_dir)
-    plt.imshow(image)
-    plt.scatter(landmarks[0], landmarks[1], s=15, marker='.', c='r')
-    plt.scatter(landmarks[2], landmarks[1], s=15, marker='.', c='r')
-    plt.scatter(landmarks[0], landmarks[3], s=15, marker='.', c='r')
-    plt.scatter(landmarks[2], landmarks[3], s=15, marker='.', c='r')
-    plt.pause(0.001)
-    plt.show()
+    # Train/test split om accuracy van localisatie in de toekomst te traceren
+    train, test = train_test_split(df, test_size=0.1, random_state=0)
 
 
-# uiteindelijk naar dataset object omzetten, met tensor voor images
-
-class AquaTrashDataset(Dataset):
-
-    def __init__(self, df, imagesDir, transform=None):
-        self.df = df
-        self.imagesDir = imagesDir
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.df)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        img_name = df.iloc[idx, 0]
-        img = PIL.Image.open(imagesDir+img_name)
+    def showItem(idx):
+        """Show image with landmarks"""
+        img_dir = imagesDir + df.iloc[idx, 0]
         landmarks = df.iloc[idx, 1:5]
-        class_name = df.iloc[idx, 5]
+        class_names = df.iloc[idx, 5]
         landmarks = np.asarray(landmarks)
-        img_array = np.array(img)
-        img_array = img_array.transpose((2, 0, 1))
-        sample = {'image': img_array, 'landmarks': landmarks, 'class': class_name}
+        image = mpimg.imread(img_dir)
+        plt.imshow(image)
+        plt.scatter(landmarks[0], landmarks[1], s=15, marker='.', c='r')
+        plt.scatter(landmarks[2], landmarks[1], s=15, marker='.', c='r')
+        plt.scatter(landmarks[0], landmarks[3], s=15, marker='.', c='r')
+        plt.scatter(landmarks[2], landmarks[3], s=15, marker='.', c='r')
+        plt.pause(0.001)
+        plt.show()
 
-        if self.transform:
-            sample = self.transform(sample)
 
-        return sample
+    # uiteindelijk naar dataset object omzetten, met tensor voor images
+
+    class AquaTrashDataset(Dataset):
+
+        def __init__(self, df, imagesDir, transform=None):
+            self.df = df
+            self.imagesDir = imagesDir
+            self.transform = transform
+
+        def __len__(self):
+            return len(self.df)
+
+        def __getitem__(self, idx):
+            if torch.is_tensor(idx):
+                idx = idx.tolist()
+
+            img_name = df.iloc[idx, 0]
+            img = PIL.Image.open(imagesDir + img_name)
+            landmarks = df.iloc[idx, 1:5]
+            class_name = df.iloc[idx, 5]
+            box = np.asarray(landmarks)
+            img_array = np.array(img)
+            img_array = img_array.transpose((2, 0, 1))
+            return img_array, box
+
+            # if self.transform:
+            #     sample = self.transform(sample)
+            #
+            # return sample
 
 
-# test/train split toepassen
-aquaTrash = AquaTrashDataset(df, imagesDir)
+    class ObjectDetector(Module):
+        def __init__(self, baseModel):  # , numClasses):
+            super(ObjectDetector, self).__init__()
+            # initialize the base model and the number of classes
+            self.baseModel = baseModel
+            # self.numClasses = numClasses
 
-# data per item
-print(aquaTrash.__getitem__(468))
-# lengte dataset
-print(aquaTrash.__len__())
+            # build the regressor head for outputting the bounding box
+            # coordinates
+            self.regressor = Sequential(
+                Linear(baseModel.fc.in_features, 128),
+                ReLU(),
+                Linear(128, 64),
+                ReLU(),
+                Linear(64, 32),
+                ReLU(),
+                Linear(32, 4),
+                Sigmoid()
+            )
+            # # build the classifier head to predict the class labels
+            # self.classifier = Sequential(
+            #     Linear(baseModel.fc.in_features, 512),
+            #     ReLU(),
+            #     Dropout(),
+            #     Linear(512, 512),
+            #     ReLU(),
+            #     Dropout(),
+            #     Linear(512, self.numClasses)
+            # )
+            # set the classifier of our base model to produce outputs
+            # from the last convolution block
+            self.baseModel.fc = Identity()
 
-#Laadt de data in
-#dataloader = DataLoader(aquaTrash, batch_size=4, shuffle=True, num_workers=4)
+        def forward(self, x):
+            # pass the inputs through the base model and then obtain
+            # predictions from two different branches of the network
+            features = self.baseModel(x)
+            bboxes = self.regressor(features)
+            # classLogits = self.classifier(features)
+            # return the outputs as a tuple
+            return (bboxes)  # ,classLogits)
 
-#Geeft foto met border weer
-#showItem(0)
+
+    # data per item
+    # print(aquaTrash.__getitem__(468))
+    # lengte dataset
+    # print(aquaTrash.__len__())
+
+    # Laadt de data in
+    # dataloader = DataLoader(aquaTrash, batch_size=4, shuffle=True, num_workers=4)
+
+    # Geeft foto met border weer
+    # showItem(100)
+
+    trainDS = AquaTrashDataset(train, imagesDir)
+
+    testDS = AquaTrashDataset(test, imagesDir)
+
+    # print(trainDS.__getitem__(0))
+
+    print("[INFO] total training samples: {}...".format(len(trainDS)))
+    print("[INFO] total test samples: {}...".format(len(testDS)))
+
+    trainSteps = len(trainDS) // config.BATCH_SIZE
+    valSteps = len(testDS) // config.BATCH_SIZE
+
+    trainLoader = DataLoader(trainDS, batch_size=config.BATCH_SIZE,
+                             shuffle=True, num_workers=os.cpu_count(), pin_memory=config.PIN_MEMORY)
+    testLoader = DataLoader(testDS, batch_size=config.BATCH_SIZE,
+                            num_workers=os.cpu_count(), pin_memory=config.PIN_MEMORY)
+
+
+    # load the ResNet50 network
+    resnet = resnet50(pretrained=True)
+    # freeze all ResNet50 layers so they will *not* be updated during the
+    # training process
+    for param in resnet.parameters():
+        param.requires_grad = False
+
+    # create our custom object detector model and flash it to the current
+    # device
+    objectDetector = ObjectDetector(resnet)
+    objectDetector = objectDetector.to(config.DEVICE)
+    # define our loss functions
+    classLossFunc = CrossEntropyLoss()
+    bboxLossFunc = MSELoss()
+    # initialize the optimizer, compile the model, and show the model
+    # summary
+    opt = Adam(objectDetector.parameters(), lr=config.INIT_LR)
+    print(objectDetector)
+    # initialize a dictionary to store training history
+    H = {"total_train_loss": [], "total_val_loss": [], "train_class_acc": [],
+         "val_class_acc": []}
+
+    # loop over epochs
+    print("[INFO] training the network...")
+    startTime = time.time()
+    for e in tqdm(range(config.NUM_EPOCHS)):
+        # set the model in training mode
+        objectDetector.train()
+        # initialize the total training and validation loss
+        totalTrainLoss = 0
+        totalValLoss = 0
+        # initialize the number of correct predictions in the training
+        # and validation step
+        trainCorrect = 0
+        valCorrect = 0
+
+        train_features, train_labels = next(iter(trainLoader))
+        print(f"Feature batch shape: {train_features.size()}")
+        print(f"Labels batch shape: {train_labels.size()}")
+
+        # loop over the training set
+        #for item in trainLoader:
+            # send the input to the device
+            # (img_arrays, box) = (img_array.to(config.DEVICE), box.to(config.DEVICE))
+            # # perform a forward pass and calculate the training loss
+            # predictions = objectDetector(img_array)
+            # totalLoss = bboxLossFunc(predictions[0], box)
+            # # zero out the gradients, perform the backpropagation step,
+            # # and update the weights
+            # opt.zero_grad()
+            # totalLoss.backward()
+            # opt.step()
+            # # add the loss to the total training loss so far and
+            # # calculate the number of correct predictions
+            # totalTrainLoss += totalLoss
+            # # trainCorrect += (predictions[1].argmax(1) == labels).type(
+            # #     torch.float).sum().item()
