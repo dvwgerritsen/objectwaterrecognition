@@ -10,19 +10,29 @@ path = Path("../data/annotations.csv")
 
 df = pd.read_csv(path)
 
-
 # loading training images
 train_img = []
-for img_name in tqdm(df['image_name']):
+for index, row in tqdm(df.iterrows()):
+    image_name = str(row['image_name'])
+
     # defining the image path
-    image_path = '../data/images/' + str(img_name)
+    image_path = '../data/images/' + image_name
     # reading the image
     img = imread(image_path)
-    #image_resized = resize(img, (400, 400),anti_aliasing=True)
-    #, as_gray=True)
+    aspect_ratio = img.shape[0] / img.shape[1]
+    height = 400 * aspect_ratio
+    image_resized = resize(img, (height, 400), anti_aliasing=True)
+    df.at[index, 'x_min'] = int((400 / img.shape[1]) * row['x_min'])
+    df.at[index, 'x_max'] = int((400 / img.shape[1]) * row['x_max'])
+    df.at[index, 'y_min'] = int((height / img.shape[0]) * row['y_min'])
+    df.at[index, 'y_max'] = int((height / img.shape[0]) * row['y_max'])
+
+    # , as_gray=True)
     # normalizing the pixel values
-    #img /= 255.0
+    # img /= 255.0
     # converting the type of pixel to float 32
-    img = img.astype('float32')
+    img = image_resized.astype('float32')
     # appending the image into the list
-    io.imsave('../data/processed_Images/' + str(img_name), img)
+    io.imsave('../data/processed_Images/' + image_name, img)
+
+df.to_csv("../data/output.csv", index=False)
