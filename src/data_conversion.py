@@ -1,3 +1,5 @@
+from torchvision import transforms
+
 if __name__ == '__main__':
     # Ignore warnings
     import os
@@ -61,7 +63,7 @@ if __name__ == '__main__':
         def __init__(self, df, imagesDir, transform=None):
             self.df = df
             self.imagesDir = imagesDir
-            self.transform = transform
+            self.transform = transforms.Compose([transforms.ToTensor()])
 
         def __len__(self):
             return len(self.df)
@@ -75,14 +77,11 @@ if __name__ == '__main__':
             landmarks = df.iloc[idx, 1:5]
             class_name = df.iloc[idx, 5]
             box = np.asarray(landmarks)
+            boxCords = np.vstack(box).astype(np.float)
+            boxTensor = torch.from_numpy(boxCords)
             img_array = np.array(img)
             img_array = img_array.transpose((2, 0, 1))
-            return img_array, box
-
-            # if self.transform:
-            #     sample = self.transform(sample)
-            #
-            # return sample
+            return self.transform(img_array), boxTensor
 
 
     class ObjectDetector(Module):
@@ -137,7 +136,7 @@ if __name__ == '__main__':
     # dataloader = DataLoader(aquaTrash, batch_size=4, shuffle=True, num_workers=4)
 
     # Geeft foto met border weer
-    # showItem(100)
+    #showItem(6)
 
     trainDS = AquaTrashDataset(train, imagesDir)
 
@@ -152,7 +151,7 @@ if __name__ == '__main__':
     valSteps = len(testDS) // config.BATCH_SIZE
 
     trainLoader = DataLoader(trainDS, batch_size=config.BATCH_SIZE,
-                             shuffle=True, num_workers=os.cpu_count(), pin_memory=config.PIN_MEMORY)
+                             shuffle=True, num_workers=0, pin_memory=config.PIN_MEMORY)
     testLoader = DataLoader(testDS, batch_size=config.BATCH_SIZE,
                             num_workers=os.cpu_count(), pin_memory=config.PIN_MEMORY)
 
@@ -193,13 +192,14 @@ if __name__ == '__main__':
         trainCorrect = 0
         valCorrect = 0
 
-        train_features, train_labels = next(iter(trainLoader))
-        print(f"Feature batch shape: {train_features.size()}")
-        print(f"Labels batch shape: {train_labels.size()}")
+        # train_features, train_labels = next(iter(trainLoader))
+        # print(f"Feature batch shape: {train_features.size()}")
+        # print(f"Labels batch shape: {train_labels.size()}")
 
         # loop over the training set
-        #for item in trainLoader:
-            # send the input to the device
+        for img, box in trainLoader:
+            #send the input to the device
+            print(img, box)
             # (img_arrays, box) = (img_array.to(config.DEVICE), box.to(config.DEVICE))
             # # perform a forward pass and calculate the training loss
             # predictions = objectDetector(img_array)
