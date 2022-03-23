@@ -13,7 +13,7 @@ ANNOTS_PATH = os.path.sep.join([BASE_PATH, "annotations"])
 BASE_OUTPUT = "output"
 # define the path to the output model, label encoder, plots output
 # directory, and testing image paths
-MODEL_PATH = os.path.sep.join([BASE_OUTPUT, "detector.pth"])
+MODEL_PATH = os.path.sep.join([BASE_OUTPUT, "detector.pt"])
 LE_PATH = os.path.sep.join([BASE_OUTPUT, "le.pickle"])
 PLOTS_PATH = os.path.sep.join([BASE_OUTPUT, "plots"])
 TEST_PATHS = os.path.sep.join([BASE_OUTPUT, "test_paths.txt"])

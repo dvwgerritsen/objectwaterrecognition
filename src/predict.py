@@ -1,3 +1,12 @@
+import pickle
+from pathlib import Path
+
+import cv2
+import torch
+from torch.nn import Identity, Sequential, Linear, ReLU, Sigmoid, Module
+
+from src import config
+
 if __name__ == '__main__':
     # Ignore warnings
     from torchvision import transforms
@@ -29,7 +38,7 @@ if __name__ == '__main__':
     PIN_MEMORY = True if DEVICE == "cuda" else False
 
     path = Path("../data/output.csv")
-    imagesDir = "../data/processed_Images/"
+    imagesDir = "../data/resized_Images/"
 
     df = pd.read_csv(path)
 
@@ -133,7 +142,7 @@ if __name__ == '__main__':
     # dataloader = DataLoader(aquaTrash, batch_size=4, shuffle=True, num_workers=4)
 
     # Geeft foto met border weer
-    #showItem(4)
+    # showItem(4)
 
     trainDS = AquaTrashDataset(train, imagesDir)
 
@@ -152,98 +161,25 @@ if __name__ == '__main__':
     testLoader = DataLoader(testDS, batch_size=config.BATCH_SIZE,
                             num_workers=0, pin_memory=config.PIN_MEMORY)
 
-
-    # load the ResNet50 network
-    resnet = resnet50(pretrained=True)
-    # freeze all ResNet50 layers so they will *not* be updated during the
-    # training process
-    for param in resnet.parameters():
-        param.requires_grad = False
-
-    # create our custom object detector model and flash it to the current
-    # device
-    objectDetector = ObjectDetector(resnet)
-    objectDetector = objectDetector.to(config.DEVICE)
-    # define our loss functions
-    #classLossFunc = CrossEntropyLoss()
-    bboxLossFunc = MSELoss()
-    # initialize the optimizer, compile the model, and show the model
-    # summary
-    opt = Adam(objectDetector.parameters(), lr=config.INIT_LR)
-    print(objectDetector)
-    # initialize a dictionary to store training history
-    H = {"total_train_loss": [], "total_val_loss": [], "train_class_acc": [],
-         "val_class_acc": []}
-
-    # loop over epochs
-    print("[INFO] training the network...")
-    startTime = time.time()
-    for e in tqdm(range(config.NUM_EPOCHS)):
-        # set the model in training mode
-        objectDetector.train()
-        # initialize the total training and validation loss
-        totalTrainLoss = 0
-        totalValLoss = 0
-        # initialize the number of correct predictions in the training
-        # and validation step
-        #trainCorrect = 0
-        valCorrect = 0
-
-        # train_features, train_labels = next(iter(trainLoader))
-        # print(f"Feature batch shape: {train_features.size()}")
-        # print(f"Labels batch shape: {train_labels.size()}")
-
-        # loop over the training set
-        for img, box in trainLoader:
-            #send the input to the device
-            (img, box) = (img.to(config.DEVICE), box.to(config.DEVICE))
+    print("[INFO] loading object detector...")
+    model = torch.load('detector.pt').to(config.DEVICE)
+    model.eval()
+    # le = pickle.loads(open(config.LE_PATH, "rb").read())
+    index = 0
+    for img, box in testLoader:
+        if index == 0:
+            image = mpimg.imread(r"C:\Users\31611\Desktop\Github\water-object-recognition\data\processed_Images\000000_jpg.rf.beffaf3b548106ccf1da5dc629bc9504.jpg")
             img = torch.permute(img, (0, 2, 1, 3))
-            # perform a forward pass and calculate the training loss
-            predictions = objectDetector(img)
-            bboxLoss = bboxLossFunc(predictions[0].float(), box.float())
-            totalLoss = (config.BBOX * bboxLoss)
-            # zero out the gradients, perform the backpropagation step,
-            # and update the weights
-            opt.zero_grad()
-            totalLoss.backward()
-            opt.step()
-            # add the loss to the total training loss so far and
-            # calculate the number of correct predictions
-            totalTrainLoss += totalLoss
-            # trainCorrect += (predictions[1].argmax(1) == labels).type(
-            #     torch.float).sum().item()
-            # switch off autograd
-            with torch.no_grad():
-                # set the model in evaluation mode
-                objectDetector.eval()
-                # loop over the validation set
-                for (img, box) in testLoader:
-                    # send the input to the device
-                    (img,box) = (img.to(config.DEVICE), box.to(config.DEVICE))
-                    img = torch.permute(img, (0, 2, 1, 3))
-                # make the predictions and calculate the validation loss
-                    predictions = objectDetector(img)
-                    bboxLoss = bboxLossFunc(predictions[0], box)
-                    totalLoss = (config.BBOX * bboxLoss)
-                    totalValLoss += totalLoss
+            boxPred = model(img)
+            print(boxPred[0])
+            size = 256
 
-        avgTrainLoss = totalTrainLoss / trainSteps
-        avgValLoss = totalValLoss / valSteps
-        # calculate the training and validation accuracy
-        #trainCorrect = trainCorrect / len(trainDS)
-        #valCorrect = valCorrect / len(testDS)
-        # update our training history
-        H["total_train_loss"].append(avgTrainLoss.cpu().detach().numpy())
-        #H["train_class_acc"].append(trainCorrect)
-        H["total_val_loss"].append(avgValLoss.cpu().detach().numpy())
-        H["val_class_acc"].append(valCorrect)
-        # print the model training and validation information
-        print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
-        #print("Train loss: {:.6f}, Train accuracy: {:.4f}".format(
-            #avgTrainLoss, trainCorrect))
-        print("Val loss: {:.6f}, Val accuracy: {:.4f}".format(
-            avgValLoss, valCorrect))
-    endTime = time.time()
-    print("[INFO] total time taken to train the model: {:.2f}s".format(
-        endTime - startTime))
-    torch.save(objectDetector, 'detector.pt')
+            # for i in range(len(boxPred[0])):
+            #     print(size * boxPred[0][i])
+            plt.scatter(int(boxPred[0][0] * size), int(boxPred[0][1] * size), s=15, marker='.', c='r')
+            plt.scatter(int(boxPred[0][2] * size), int(boxPred[0][1] * size), s=15, marker='.', c='r')
+            plt.scatter(int(boxPred[0][0] * size), int(boxPred[0][3] * size), s=15, marker='.', c='r')
+            plt.scatter(int(boxPred[0][2] * size), int(boxPred[0][3] * size), s=15, marker='.', c='r')
+            plt.imshow(image)
+            plt.show()
+        index += 1
