@@ -136,7 +136,7 @@ if __name__ == '__main__':
     # dataloader = DataLoader(aquaTrash, batch_size=4, shuffle=True, num_workers=4)
 
     # Geeft foto met border weer
-    #showItem(6)
+    #showItem(4)
 
     trainDS = AquaTrashDataset(train, imagesDir)
 
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     trainLoader = DataLoader(trainDS, batch_size=config.BATCH_SIZE,
                              shuffle=True, num_workers=0, pin_memory=config.PIN_MEMORY)
     testLoader = DataLoader(testDS, batch_size=config.BATCH_SIZE,
-                            num_workers=os.cpu_count(), pin_memory=config.PIN_MEMORY)
+                            num_workers=0, pin_memory=config.PIN_MEMORY)
 
 
     # load the ResNet50 network
@@ -168,7 +168,7 @@ if __name__ == '__main__':
     objectDetector = ObjectDetector(resnet)
     objectDetector = objectDetector.to(config.DEVICE)
     # define our loss functions
-    classLossFunc = CrossEntropyLoss()
+    #classLossFunc = CrossEntropyLoss()
     bboxLossFunc = MSELoss()
     # initialize the optimizer, compile the model, and show the model
     # summary
@@ -189,7 +189,7 @@ if __name__ == '__main__':
         totalValLoss = 0
         # initialize the number of correct predictions in the training
         # and validation step
-        trainCorrect = 0
+        #trainCorrect = 0
         valCorrect = 0
 
         # train_features, train_labels = next(iter(trainLoader))
@@ -199,18 +199,51 @@ if __name__ == '__main__':
         # loop over the training set
         for img, box in trainLoader:
             #send the input to the device
-            print(img, box)
-            # (img_arrays, box) = (img_array.to(config.DEVICE), box.to(config.DEVICE))
-            # # perform a forward pass and calculate the training loss
-            # predictions = objectDetector(img_array)
-            # totalLoss = bboxLossFunc(predictions[0], box)
-            # # zero out the gradients, perform the backpropagation step,
-            # # and update the weights
-            # opt.zero_grad()
-            # totalLoss.backward()
-            # opt.step()
-            # # add the loss to the total training loss so far and
-            # # calculate the number of correct predictions
-            # totalTrainLoss += totalLoss
-            # # trainCorrect += (predictions[1].argmax(1) == labels).type(
-            # #     torch.float).sum().item()
+            (img, box) = (img.to(config.DEVICE), box.to(config.DEVICE))
+            # perform a forward pass and calculate the training loss
+            predictions = objectDetector(img)
+            bboxLoss = bboxLossFunc(predictions[0], box)
+            totalLoss = (config.BBOX * bboxLoss)
+            # zero out the gradients, perform the backpropagation step,
+            # and update the weights
+            opt.zero_grad()
+            totalLoss.backward()
+            opt.step()
+            # add the loss to the total training loss so far and
+            # calculate the number of correct predictions
+            totalTrainLoss += totalLoss
+            # trainCorrect += (predictions[1].argmax(1) == labels).type(
+            #     torch.float).sum().item()
+            # switch off autograd
+            with torch.no_grad():
+                # set the model in evaluation mode
+                objectDetector.eval()
+                # loop over the validation set
+                for (img, box) in testLoader:
+                    # send the input to the device
+                    (img,box) = (img.to(config.DEVICE), box.to(config.DEVICE))
+                    # make the predictions and calculate the validation loss
+                    predictions = objectDetector(img)
+                    bboxLoss = bboxLossFunc(predictions[0], box)
+                    totalLoss = (config.BBOX * bboxLoss)
+                    totalValLoss += totalLoss
+
+        avgTrainLoss = totalTrainLoss / trainSteps
+        avgValLoss = totalValLoss / valSteps
+        # calculate the training and validation accuracy
+        #trainCorrect = trainCorrect / len(trainDS)
+        #valCorrect = valCorrect / len(testDS)
+        # update our training history
+        H["total_train_loss"].append(avgTrainLoss.cpu().detach().numpy())
+        #H["train_class_acc"].append(trainCorrect)
+        H["total_val_loss"].append(avgValLoss.cpu().detach().numpy())
+        H["val_class_acc"].append(valCorrect)
+        # print the model training and validation information
+        print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
+        #print("Train loss: {:.6f}, Train accuracy: {:.4f}".format(
+            #avgTrainLoss, trainCorrect))
+        print("Val loss: {:.6f}, Val accuracy: {:.4f}".format(
+            avgValLoss, valCorrect))
+    endTime = time.time()
+    print("[INFO] total time taken to train the model: {:.2f}s".format(
+        endTime - startTime))
