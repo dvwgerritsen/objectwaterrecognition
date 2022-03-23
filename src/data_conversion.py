@@ -200,9 +200,10 @@ if __name__ == '__main__':
         for img, box in trainLoader:
             #send the input to the device
             (img, box) = (img.to(config.DEVICE), box.to(config.DEVICE))
+            img = torch.permute(img, (0, 2, 1, 3))
             # perform a forward pass and calculate the training loss
             predictions = objectDetector(img)
-            bboxLoss = bboxLossFunc(predictions[0], box)
+            bboxLoss = bboxLossFunc(predictions[0].float(), box.float())
             totalLoss = (config.BBOX * bboxLoss)
             # zero out the gradients, perform the backpropagation step,
             # and update the weights
@@ -222,7 +223,8 @@ if __name__ == '__main__':
                 for (img, box) in testLoader:
                     # send the input to the device
                     (img,box) = (img.to(config.DEVICE), box.to(config.DEVICE))
-                    # make the predictions and calculate the validation loss
+                    img = torch.permute(img, (0, 2, 1, 3))
+                # make the predictions and calculate the validation loss
                     predictions = objectDetector(img)
                     bboxLoss = bboxLossFunc(predictions[0], box)
                     totalLoss = (config.BBOX * bboxLoss)
@@ -247,3 +249,4 @@ if __name__ == '__main__':
     endTime = time.time()
     print("[INFO] total time taken to train the model: {:.2f}s".format(
         endTime - startTime))
+    torch.save(objectDetector, 'tada')
