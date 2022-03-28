@@ -13,11 +13,13 @@
         <label for="file" class="form-label">Upload een afbeelding</label>
         <input class="form-control" type="file" name="file" id="file">
     </div>
-    <button type="submit" class="btn btn-primary">Submit</button>
+    <button type="submit" class="btn btn-primary">Verstuur</button>
     <br><br>
-    {{ result }}
     {% if image %}
-    <img src="{{ image }}">
+        <img style="max-height: 500px; max-width: 700px;" src="processed-image/{{ image }}">
+    {% endif %}
+    {% if error %}
+        <p style="color: red">{{ error }}</p>
     {% endif %}
 </form>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
