@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 from predict_nieuw import predict
 
 app = Flask(__name__)
+app.static_folder = 'static'
 
 
 @app.route('/', methods=['GET', 'POST'])
