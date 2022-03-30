@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect, send_from_directory
 from werkzeug.utils import secure_filename
-from predict_nieuw import predict
+from predict import predict
 
 app = Flask(__name__)
 app.static_folder = 'static'
@@ -26,7 +26,7 @@ def hello_world():
             print('Only jpg or png is supported')
             error = 'Het bestandstype moet jpg of png zijn.'
 
-    return render_template("index.html", image=image, error=error)
+    return render_template("templates/index.html", image=image, error=error)
 
 
 @app.route('/processed-image/<path:path>')

@@ -11,7 +11,7 @@ from skimage.transform import resize
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-path = Path("../data/annotations.csv")
+path = Path("data/annotations.csv")
 
 df = pd.read_csv(path)
 
