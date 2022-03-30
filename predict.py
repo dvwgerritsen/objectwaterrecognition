@@ -1,53 +1,49 @@
-# USAGE
-# python predict.py --input dataset/images/face/image_0131.jpg
-# import the necessary packages
-from imagesearch import config
-from torchvision import transforms
-import mimetypes
-import argparse
-import imutils
-import pickle
-import torch
-import cv2
+def predict(file_path, show_image):
+    # import the necessary packages
+    from imagesearch import config
+    from torchvision import transforms
+    import imutils
+    import pickle
+    import torch
+    import cv2
+    from random import randrange
 
-# # construct the argument parser and parse the arguments
-# ap = argparse.ArgumentParser()
-# ap.add_argument("-i", "--input", required=True,
-# 	help="path to input image/text file of image paths")
-# args = vars(ap.parse_args())
-#
-# # determine the input file type, but assume that we're working with
-# # single input image
-# filetype = mimetypes.guess_type(args["input"])[0]
-# imagePaths = [args["input"]]
-# # if the file type is a text file, then we need to process *multiple*
-# # images
-# if "text/plain" == filetype:
-# 	# load the image paths in our testing file
-# 	imagePaths = open(args["input"]).read().strip().split("\n")
-#
-# 	# load our object detector, set it evaluation mode, and label
-# 	# encoder from disk
-print("[INFO] loading object detector...")
-model = torch.load(config.MODEL_PATH).to(config.DEVICE)
-model.eval()
-le = pickle.loads(open(config.LE_PATH, "rb").read())
-# define normalization transforms
-transforms = transforms.Compose([
-    transforms.ToPILImage(),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=config.MEAN, std=config.STD)
-])
+    # # construct the argument parser and parse the arguments
+    # ap = argparse.ArgumentParser()
+    # ap.add_argument("-i", "--input", required=True,
+    # 	help="path to input image/text file of image paths")
+    # args = vars(ap.parse_args())
+    #
+    # # determine the input file type, but assume that we're working with
+    # # single input image
+    # filetype = mimetypes.guess_type(args["input"])[0]
+    # imagePaths = [args["input"]]
+    # # if the file type is a text file, then we need to process *multiple*
+    # # images
+    # if "text/plain" == filetype:
+    # 	# load the image paths in our testing file
+    # 	imagePaths = open(args["input"]).read().strip().split("\n")
+    #
+    # 	# load our object detector, set it evaluation mode, and label
+    # 	# encoder from disk
+    print("[INFO] loading object detector...")
+    # map_location=cpu is required to use a model created with a gpu on the cpu.
+    model = torch.load(config.MODEL_PATH, map_location='cpu').to(config.DEVICE)
+    model.eval()
+    le = pickle.loads(open(config.LE_PATH, "rb").read())
+    # define normalization transforms
+    transforms = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=config.MEAN, std=config.STD)
+    ])
 
-imagePaths = [
-    r"C:\Users\Dennis Gerritsen\PycharmProjects\objectrecognition\data\Images\000129_JPG.rf.eb4bb302dd9580081c49afc5465f58ce.jpg"]
 
-# loop over the images that we'll be testing using our bounding box
-# regression model
-for imagePath in imagePaths:
+    # loop over the images that we'll be testing using our bounding box
+    # regression model
     # load the image, copy it, swap its colors channels, resize it, and
     # bring its channel dimension forward
-    image = cv2.imread(imagePath)
+    image = cv2.imread(file_path)
     orig = image.copy()
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = cv2.resize(image, (224, 224))
@@ -84,6 +80,15 @@ for imagePath in imagePaths:
                 0.65, (0, 255, 0), 2)
     cv2.rectangle(orig, (startX, startY), (endX, endY),
                   (0, 255, 0), 2)
-    # show the output image
-    cv2.imshow("Output", orig)
-    cv2.waitKey(0)
+    if show_image:
+        # show the output image
+        cv2.imshow("Output", orig)
+        cv2.waitKey(0)
+
+    file_name = str(randrange(100000000)) + ".jpg"
+    cv2.imwrite("predicted_images/" + file_name, orig)
+
+    return file_name
+
+if __name__ == '__main__':
+    predict(r"C:\Users\koenh\IdeaProjects\water-object-recognition\data\resized_Images\000000_jpg.rf.beffaf3b548106ccf1da5dc629bc9504.jpg", True)

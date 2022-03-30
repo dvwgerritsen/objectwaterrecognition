@@ -3,6 +3,12 @@ from flask import Flask, render_template, request, redirect, send_from_directory
 from werkzeug.utils import secure_filename
 from predict import predict
 
+if not os.path.exists('predicted_images'):
+    os.makedirs('predicted_images')
+
+if not os.path.exists('upload'):
+    os.makedirs('upload')
+
 app = Flask(__name__)
 app.static_folder = 'static'
 
@@ -17,16 +23,19 @@ def hello_world():
             return redirect(request.url)
 
         file = request.files['file']
-        file_extension = file.filename.rsplit('.', 1)[1].lower()
-        if file and (file_extension == 'jpg' or file_extension == 'jpeg' or file_extension == 'png'):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join("upload/", filename))
-            image = predict("upload/" + filename, False)
+        if len(file.filename) > 0:
+            file_extension = file.filename.rsplit('.', 1)[1].lower()
+            if file and (file_extension == 'jpg' or file_extension == 'jpeg' or file_extension == 'png'):
+                filename = secure_filename(file.filename)
+                file.save(os.path.join("upload/", filename))
+                image = predict("upload/" + filename, False)
+            else:
+                print('Only jpg or png is supported')
+                error = 'Het bestandstype moet jpg of png zijn.'
         else:
-            print('Only jpg or png is supported')
-            error = 'Het bestandstype moet jpg of png zijn.'
+            error = 'Ongeldig bestand.'
 
-    return render_template("templates/index.html", image=image, error=error)
+    return render_template("index.html", image=image, error=error)
 
 
 @app.route('/processed-image/<path:path>')
