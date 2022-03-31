@@ -1,6 +1,8 @@
 # USAGE
 # python train.py
 # import the necessary packages
+import json
+
 from imagesearch.bbox_regressor import ObjectDetector
 from imagesearch.aquatrash_dataset import CustomTensorDataset
 from imagesearch import config
@@ -67,6 +69,49 @@ if __name__ == '__main__':
         bboxes.append((startX, startY, endX, endY))
         imagePaths.append(imagePath)
         index += 1
+
+    for i in tqdm(range(1, 16)):
+        with open(os.path.sep.join([config.BASE_PATH, "taco-data", "batch_" + str(i), "annotations.json"])) as f:
+            json_file = json.load(f)
+
+        annotations = json_file["annotations"]
+        image_list = json_file["images"]
+        for image_json in image_list:
+            image_id = image_json["id"]
+            filename = image_json["file_name"]
+            annotation_count = 0
+
+            for annotation in annotations:
+                if annotation["image_id"] == image_id:
+                    annotation_count += 1
+
+            if annotation_count == 1:
+                for annotation in annotations:
+                    if annotation["image_id"] == image_id:
+                        bbox = annotation["bbox"]
+                        (startX, startY, endX, endY, label) = bbox[0], bbox[1], bbox[0] + \
+                                                              bbox[2], bbox[1] + bbox[3], "trash"
+                        # derive the path to the input image, load the image (in
+                        # OpenCV format), and grab its dimensions
+                        imagePath = os.path.sep.join([config.BASE_PATH, "taco-data", "batch_" + str(i), filename])
+                        image = cv2.imread(imagePath)
+                        (h, w) = image.shape[:2]
+                        # scale the bounding box coordinates relative to the spatial
+                        # dimensions of the input image
+                        startX = float(startX) / w
+                        startY = float(startY) / h
+                        endX = float(endX) / w
+                        endY = float(endY) / h
+                        # load the image and preprocess it
+                        image = cv2.imread(imagePath)
+                        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                        image = cv2.resize(image, (224, 224))
+                        # update our list of data, class labels, bounding boxes, and
+                        # image paths
+                        data.append(image)
+                        labels.append(label)
+                        bboxes.append((startX, startY, endX, endY))
+                        imagePaths.append(imagePath)
 
     print("[INFO] dataset has been loaded")
     # convert the data, class labels, bounding boxes, and image paths to
