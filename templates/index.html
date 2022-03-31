@@ -17,7 +17,12 @@
 <br>
 <div class="container main-content">
     <form action="" method="post" enctype='multipart/form-data'>
-        <p>Uitleg over dit</p>
+        <p>Elke dag komen duizen kilo's afval terecht in de oceaan. Dit is een groot probleem voor het leven in de oceaan. Deze web applicatie kan een voorspelling maken van waar afval zich bevind in een afbeelding. Upload een afbeelding om een voorspelling te doen. <br><br>
+            <img class="neuron" src="{{ url_for('static', filename='neuron.jpeg') }}" alt="Neuron">
+        De web applicatie gebruikt een neuraal netwerk om te bepalen waar het afval is. Een neuraal netwerk is een groep van verbonden neuronen. Een neuron is een soort van wiskundige functie. Bij een neuron komen een of meer nummers binnen. Per invoer geeft een neuron een ander gewicht aan de input. Aan de hand van een wiskundige functie worden de verschillende getallen en gewichten samengevoegd en komt er een getal uit. Een neuraal netwerk kan verschillende neuronen achter elkaar hebben die weer getallen uit andere neuronen als invoer hebben.
+            <br><br>
+            Met een set afbeeldingen is het neuraal netwerk steeds doorlopen en de gewichten per invoer telkens aangepast. Op deze manier kan de uitvoer van een neuraal netwerk worden verbeterd.
+            Om te kunnen bepalen waar het afval in een afbeelding is wordt dit neuraal netwerk ingeladen en het neurale netwerk met deze afbeelding doorlopen. </p>
         <div class="mb-3">
             <label for="file" class="form-label">Upload een afbeelding</label>
             <input class="form-control" type="file" name="file" id="file">
