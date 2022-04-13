@@ -1,0 +1,6 @@
+version: "3.1"
+services:
+  app:
+    image: ghcr.io/dvwgerritsen/water-object-recognition:latest
+    ports:
+      - "5000:5000"
