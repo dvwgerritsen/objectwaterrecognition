@@ -16,12 +16,22 @@
 </nav>
 <br>
 <div class="container main-content">
-    <p>Elke dag komen duizen kilo's afval terecht in de oceaan. Dit is een groot probleem voor het leven in de oceaan. Deze web applicatie kan een voorspelling maken van waar afval zich bevind in een afbeelding. Upload een afbeelding om een voorspelling te doen. <br><br>
+    <p>Elke dag komen duizenden kilo's afval terecht in de oceaan. Dit is een groot probleem voor het leven in de
+        oceaan.
+        Deze webapplicatie kan een voorspelling maken van waar afval zich bevind in een afbeelding. Upload een
+        afbeelding om een voorspelling te doen. <br><br>
         <img class="neuron" src="{{ url_for('static', filename='neuron.jpeg') }}" alt="Neuron">
-        De web applicatie gebruikt een neuraal netwerk om te bepalen waar het afval is. Een neuraal netwerk is een groep van verbonden neuronen. Een neuron is een soort van wiskundige functie. Bij een neuron komen een of meer nummers binnen. Per invoer geeft een neuron een ander gewicht aan de input. Aan de hand van een wiskundige functie worden de verschillende getallen en gewichten samengevoegd en komt er een getal uit. Een neuraal netwerk kan verschillende neuronen achter elkaar hebben die weer getallen uit andere neuronen als invoer hebben.
+        De webapplicatie gebruikt een neuraal netwerk om te bepalen waar het afval is. Een neuraal netwerk is een groep
+        van verbonden neuronen. Een neuron is een soort van wiskundige functie. Bij een neuron komen een of meer nummers
+        binnen. Per invoer geeft een neuron een ander gewicht aan de input. Daarnaast heeft een neuron een bias. Dit is
+        een getal dat erbij wordt geteld. Aan de hand van een wiskundige functie
+        worden de verschillende getallen en gewichten samengevoegd en komt er een getal uit. Een neuraal netwerk kan
+        verschillende neuronen achter elkaar hebben die weer getallen uit andere neuronen als invoer hebben.
         <br><br>
-        Met een set afbeeldingen is het neuraal netwerk steeds doorlopen en de gewichten per invoer telkens aangepast. Op deze manier kan de uitvoer van een neuraal netwerk worden verbeterd.
-        Om te kunnen bepalen waar het afval in een afbeelding is wordt dit neuraal netwerk ingeladen en het neurale netwerk met deze afbeelding doorlopen. </p>
+        Met een set afbeeldingen is het neuraal netwerk steeds doorlopen en de gewichten per invoer telkens aangepast.
+        Op deze manier kan de uitvoer van een neuraal netwerk worden verbeterd.
+        Om te kunnen bepalen waar het afval in een afbeelding is, wordt dit neuraal netwerk ingeladen en het neurale
+        netwerk met deze afbeelding doorlopen. </p>
     <form action="" method="post" enctype='multipart/form-data'>
         <div class="mb-3">
             <label for="file" class="form-label">Upload een afbeelding</label>
@@ -30,7 +40,22 @@
         <button type="submit" class="btn btn-primary">Verstuur</button>
         <br><br>
         {% if image %}
-            <img style="max-height: 500px; max-width: 700px;" src="processed-image/{{ image }}">
+            <div class="row">
+                <div class="col">
+                    <img style="max-width: 100%; max-height: 100%;" src="processed-image/{{ image }}"
+                         alt="Geannoteerde afbeelding">
+                </div>
+                <div class="col">
+                    <p>Is de detectie van het afval niet correct? <br>
+                        Dit kan gedeeltelijk komen doordat de dataset waarmee het model is getraind vooral afval in het
+                        midden van de afbeelding had.
+                        Dit zorgt ervoor dat het model ook een afwijking naar het midden heeft.<br>
+                        Daarnaast is het model getraind met afbeeldingen met maar een stuk afval.
+                        Hierdoor was de dataset om te trainen kleiner waardoor het model minder goed presteert.
+                        Het is niet mogelijk om meerdere stukken afval te detecteren.
+                    </p>
+                </div>
+            </div>
         {% endif %}
         {% if error %}
             <p style="color: red">{{ error }}</p>

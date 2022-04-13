@@ -15,3 +15,7 @@ body {
     width: 240px;
     margin-left: 10px;
 }
+
+.col {
+    min-width: 300px;
+}
