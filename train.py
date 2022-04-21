@@ -48,7 +48,7 @@ if __name__ == '__main__':
                                                         df.iloc[index][3], df.iloc[index][4], df.iloc[index][5]
         # derive the path to the input image, load the image (in
         # OpenCV format), and grab its dimensions
-        imagePath = os.path.sep.join([config.IMAGES_PATH,
+        imagePath = os.path.sep.join([config.AQUATRASH_IMAGES_PATH,
                                       filename])
         image = cv2.imread(imagePath)
         (h, w) = image.shape[:2]
@@ -93,7 +93,7 @@ if __name__ == '__main__':
                                                               bbox[2], bbox[1] + bbox[3], "trash"
                         # derive the path to the input image, load the image (in
                         # OpenCV format), and grab its dimensions
-                        imagePath = os.path.sep.join([config.BASE_PATH, "taco-data", "batch_" + str(i), filename])
+                        imagePath = os.path.sep.join([config.TACO_IMAGES_PATH, "batch_" + str(i), filename])
                         image = cv2.imread(imagePath)
                         (h, w) = image.shape[:2]
                         # scale the bounding box coordinates relative to the spatial

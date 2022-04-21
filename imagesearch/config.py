@@ -5,7 +5,13 @@ import os
 # define the base path to the input dataset and then use it to derive
 # the path to the input images and annotation CSV files
 BASE_PATH = "data"
-IMAGES_PATH = os.path.sep.join([BASE_PATH, "Images"])
+
+# path to AquaTrash images (https://github.com/Harsh9524/AquaTrash)
+AQUATRASH_IMAGES_PATH = os.path.sep.join([BASE_PATH, "Images"])
+# Path to taco images. The annotations.json and batch folders should be there.
+# (https://github.com/pedropro/TACO or direct download https://doi.org/10.5281/zenodo.3587843)
+TACO_IMAGES_PATH = os.path.sep.join([BASE_PATH, "taco-data"])
+
 ANNOTS_PATH = os.path.sep.join([BASE_PATH, "annotations.csv"])
 # define the path to the base output directory
 BASE_OUTPUT = "output"
